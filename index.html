@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football Quiz Arena</title>
+<style>
+:root{--bg:#07130f;--card:#0e2119;--card2:#143024;--green:#20d67b;--text:#f5fff9;--muted:#9eb5aa;--danger:#ff5c67}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:radial-gradient(circle at top,#123a28 0,#07130f 48%,#040907 100%);color:var(--text);min-height:100vh}
+.wrap{width:min(900px,92%);margin:auto;padding:34px 0 50px}.hero{text-align:center;margin-bottom:24px}.ball{font-size:42px}.hero h1{font-size:clamp(32px,7vw,58px);margin:6px 0;background:linear-gradient(90deg,#fff,#8dffc3);-webkit-background-clip:text;color:transparent}.hero p{color:var(--muted);margin:0}
+.panel{background:rgba(14,33,25,.9);border:1px solid #244536;border-radius:24px;padding:24px;box-shadow:0 18px 60px #0008;backdrop-filter:blur(10px)}
+.top{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:18px}.pill{background:#173b2b;padding:8px 13px;border-radius:999px;color:#b8ffd7;font-weight:700;font-size:14px}.progress{height:9px;background:#193126;border-radius:99px;overflow:hidden;margin-bottom:25px}.bar{height:100%;background:linear-gradient(90deg,#16b966,#5affae);width:0;transition:.3s}
+.category{color:#6dffb0;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.4px}.question{font-size:clamp(21px,4vw,31px);line-height:1.25;margin:10px 0 22px}.options{display:grid;gap:12px}.option{width:100%;padding:16px 18px;border:1px solid #315646;background:#10281e;color:var(--text);border-radius:15px;text-align:left;font-size:16px;cursor:pointer;transition:.18s}.option:hover{transform:translateY(-2px);border-color:#49d98d;background:#17392b}.option.correct{background:#123d29;border-color:#2cf18b}.option.wrong{background:#401c22;border-color:#ff6570}.option:disabled{cursor:default;opacity:.95}
+.feedback{min-height:27px;margin:17px 0 0;font-weight:800}.feedback.ok{color:#55f5a1}.feedback.no{color:#ff7b83}.actions{display:flex;justify-content:flex-end;margin-top:20px}.btn{border:0;background:var(--green);color:#032014;font-weight:900;padding:13px 21px;border-radius:13px;cursor:pointer;font-size:15px}.btn:disabled{opacity:.35;cursor:not-allowed}
+.start{text-align:center}.start h2{font-size:30px}.start p{color:var(--muted);line-height:1.6}.start .btn{margin-top:10px}.hidden{display:none}
+.result{text-align:center}.score{font-size:70px;font-weight:900;color:#66ffb1}.result p{color:var(--muted);font-size:17px}.review{text-align:left;margin-top:22px}.review-item{padding:13px 0;border-bottom:1px solid #234234}.review-item b{display:block;margin-bottom:5px}.small{color:var(--muted);font-size:14px}
+@media(max-width:600px){.panel{padding:19px}.top{align-items:flex-start}.option{padding:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="ball">⚽</div>
+    <h1>Football Quiz Arena</h1>
+    <p>How well do you really know the beautiful game?</p>
+  </header>
+
+  <section class="panel" id="start">
+    <div class="start">
+      <h2>Ready for kickoff?</h2>
+      <p>10 multiple-choice questions covering football history, players, clubs and major tournaments.</p>
+      <button class="btn" onclick="startQuiz()">Start Quiz →</button>
+    </div>
+  </section>
+
+  <section class="panel hidden" id="quiz">
+    <div class="top">
+      <span class="pill" id="counter">Question 1 / 10</span>
+      <span class="pill" id="score">Score: 0</span>
+    </div>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    <div class="category" id="category"></div>
+    <div class="question" id="question"></div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="actions"><button class="btn" id="next" onclick="nextQuestion()" disabled>Next Question</button></div>
+  </section>
+
+  <section class="panel hidden" id="result">
+    <div class="result">
+      <div class="ball">🏆</div>
+      <h2>Full Time!</h2>
+      <div class="score" id="finalScore">0/10</div>
+      <p id="message"></p>
+      <button class="btn" onclick="startQuiz()">Play Again ↻</button>
+      <div class="review" id="review"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const questions=[
+ {c:"World Cup",q:"Which country won the 2022 FIFA World Cup?",o:["France","Argentina","Brazil","Croatia"],a:1},
+ {c:"Legends",q:"Who is famously known as 'The King of Football'?",o:["Pelé","Zinedine Zidane","Johan Cruyff","Ronaldinho"],a:0},
+ {c:"Champions League",q:"Which club has won the most UEFA Champions League/European Cup titles?",o:["Barcelona","AC Milan","Real Madrid","Liverpool"],a:2},
+ {c:"Portugal",q:"Which player has captained Portugal for many years and wears the number 7?",o:["Bruno Fernandes","Cristiano Ronaldo","Bernardo Silva","Pepe"],a:1},
+ {c:"Rules",q:"How many players from one team are normally on the pitch at the start of a football match?",o:["9","10","11","12"],a:2},
+ {c:"World Cup",q:"Which nation won the 2018 FIFA World Cup?",o:["Germany","France","Spain","Argentina"],a:1},
+ {c:"Clubs",q:"Which club plays its home matches at Camp Nou?",o:["Atlético Madrid","Barcelona","Valencia","Sevilla"],a:1},
+ {c:"England",q:"What is the nickname of the England men's national football team?",o:["The Lions","The Three Lions","The Red Devils","The Blues"],a:1},
+ {c:"Tactics",q:"What does 'GK' stand for in football?",o:["Goal Keeper","Game Keeper","Ground Kick","Goal Kicker"],a:0},
+ {c:"Trophies",q:"What trophy is awarded to the winner of the FIFA World Cup?",o:["The Golden Ball","The World Cup Trophy","The Jules Rimet Trophy","The Champions Cup"],a:1}
+];
+
+let current=0, points=0, answers=[];
+
+function startQuiz(){
+ current=0;points=0;answers=[];
+ document.getElementById("start").classList.add("hidden");
+ document.getElementById("result").classList.add("hidden");
+ document.getElementById("quiz").classList.remove("hidden");
+ render();
+}
+function render(){
+ const x=questions[current];
+ document.getElementById("counter").textContent=`Question ${current+1} / ${questions.length}`;
+ document.getElementById("score").textContent=`Score: ${points}`;
+ document.getElementById("bar").style.width=`${current/questions.length*100}%`;
+ document.getElementById("category").textContent=x.c;
+ document.getElementById("question").textContent=x.q;
+ document.getElementById("feedback").textContent="";
+ document.getElementById("feedback").className="feedback";
+ const box=document.getElementById("options"); box.innerHTML="";
+ x.o.forEach((text,i)=>{
+   const b=document.createElement("button"); b.className="option"; b.textContent=`${String.fromCharCode(65+i)}. ${text}`;
+   b.onclick=()=>choose(i,b); box.appendChild(b);
+ });
+ const n=document.getElementById("next"); n.disabled=true;
+ n.textContent=current===questions.length-1?"See Results →":"Next Question →";
+}
+function choose(i,button){
+ const x=questions[current], buttons=[...document.querySelectorAll(".option")];
+ buttons.forEach(b=>b.disabled=true);
+ buttons[x.a].classList.add("correct");
+ if(i===x.a){points++; document.getElementById("feedback").textContent="✓ Correct!";document.getElementById("feedback").className="feedback ok";}
+ else{button.classList.add("wrong");document.getElementById("feedback").textContent=`✕ Not quite — the answer is ${x.o[x.a]}.`;document.getElementById("feedback").className="feedback no";}
+ answers.push({q:x.q,chosen:x.o[i],correct:x.o[x.a],ok:i===x.a});
+ document.getElementById("score").textContent=`Score: ${points}`;
+ document.getElementById("next").disabled=false;
+}
+function nextQuestion(){
+ if(current<questions.length-1){current++;render();}
+ else showResult();
+}
+function showResult(){
+ document.getElementById("quiz").classList.add("hidden");
+ document.getElementById("result").classList.remove("hidden");
+ document.getElementById("finalScore").textContent=`${points}/${questions.length}`;
+ const pct=points/questions.length*100;
+ document.getElementById("message").textContent=pct===100?"Perfect score! Absolute football master. 🐐":pct>=80?"Brilliant performance!":pct>=60?"Solid game. Keep sharpening your football knowledge!":"Tough match — time for a rematch!";
+ const review=document.getElementById("review");review.innerHTML="<h3>Match Review</h3>";
+ answers.forEach((a,i)=>{review.innerHTML+=`<div class="review-item"><b>${i+1}. ${a.q}</b><span class="small">${a.ok?"✓":"✕"} Your answer: ${a.chosen} · Correct: ${a.correct}</span></div>`});
+}
+</script>
+</body>
+</html>
